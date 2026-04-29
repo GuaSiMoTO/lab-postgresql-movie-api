@@ -7,7 +7,9 @@ const {
   actualizarPelicula,
   eliminarPelicula,
   listarResenas,
-  crearResena
+  crearResena,
+  modificarPelicula,
+  obtenerPorPaginacion
 } = require('../controllers/peliculasController')
 
 const router = Router()
@@ -18,6 +20,12 @@ router.get('/:id', obtenerPelicula)
 router.post('/', crearPelicula)
 router.put('/:id', actualizarPelicula)
 router.delete('/:id', eliminarPelicula)
+
+//BONUS: PATCH cambiar algunos campos
+router.patch('/:id', modificarPelicula);
+
+//BONUS: GET por página
+router.get('/', obtenerPorPaginacion);
 
 // Rutas anidadas: reseñas de una película
 router.get('/:id', listarResenas)

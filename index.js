@@ -3,7 +3,7 @@ require('dotenv').config()
 const express = require('express')
 
 const peliculasRouter = require('./src/routes/peliculas')
-
+const estadisticasRouter = require('./src/routes/estadisticas');
 const app = express()
 const PORT = Number(process.env.PORT) || 4000
 
@@ -13,8 +13,9 @@ app.use(express.json())
 // Rutas
 app.use('/api/peliculas', peliculasRouter)
 
-// Ruta de estadísticas (no pertenece a peliculasRouter, pero podrías moverla también)
-app.get('/api/estadisticas', require('./src/controllers/peliculasController').obtenerEstadisticas)
+// BONUS: Ruta de estadísticas 
+app.use('/api', estadisticasRouter)
+
 
 // 404 global
 app.use((req, res) => {

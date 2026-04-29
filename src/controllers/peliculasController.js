@@ -1,4 +1,5 @@
 // src/controllers/peliculasController.js
+//traer los datos de data/peliculas.js
 const db = require('../data/peliculas')
 
 // GET /api/peliculas
@@ -77,10 +78,7 @@ const eliminarPelicula = (req, res) => {
   res.json({ mensaje: 'Película eliminada', pelicula: eliminada })
 }
 
-// GET /api/estadisticas
-const obtenerEstadisticas = (req, res) => {
-  res.json(db.getStats())
-}
+
 
 // GET /api/peliculas/:id/resenas
 const listarResenas = (req, res) => {
@@ -125,13 +123,74 @@ const crearResena = (req, res) => {
   res.status(201).json(nueva)
 }
 
+// BONUS: PATCH cambiar algunos campos
+const modificarPelicula = (req, res) => {
+  const id = Number(req.params.id);
+  
+  // 1. Buscamos la película actual para tener los datos existentes
+  const peliculaExistente = db.getById(id); 
+
+  if (!peliculaExistente) {
+    return res.status(404).json({ error: 'Película no encontrada' });
+  }
+
+  // Usamos el Spread Operator para mezclar:
+  // Tomamos lo que ya había (...peliculaExistente) 
+  // y le encima lo que viene nuevo (...req.body)
+  const datosActualizados = { 
+    ...peliculaExistente, 
+    ...req.body 
+  };
+
+  // Aseguramos que los tipos de datos sigan siendo correctos (números)
+  if (req.body.anio) datosActualizados.anio = Number(req.body.anio);
+  if (req.body.nota) datosActualizados.nota = Number(req.body.nota);
+
+  // Guardamos en la "base de datos"
+  const actualizada = db.update(id, datosActualizados);
+
+  res.json(actualizada);
+};
+
+// BONUS: Modificar GET/api/peliculas con paginación ?pagina=1&limite=2
+
+const obtenerPorPaginacion = (req, res) => {
+  // =btener parámetros de la query con valores por defecto
+  const pagina = Number(req.query.pagina) || 1;
+  const limite = Number(req.query.limite) || 10;
+
+  // 2. Obtener todas las películas (o las filtradas si tienes búsqueda)
+  const todasLasPeliculas = db.getAll(); // asumiendo que db.getAll() devuelve el array completo
+  const total = todasLasPeliculas.length;
+
+  // 3. Lógica de paginación
+  // El "inicio" es (pagina - 1) * limite. Ej: Pag 2 con limite 2 empieza en el indice 2.
+  const inicio = (pagina - 1) * limite;
+  const fin = inicio + limite;
+  
+  const data = todasLasPeliculas.slice(inicio, fin);
+
+  // 4. Calcular total de páginas
+  const totalPaginas = Math.ceil(total / limite);
+
+  // 5. Enviar respuesta con la estructura solicitada
+  res.json({
+    data,
+    total,
+    pagina,
+    totalPaginas
+  });
+};
+
+
 module.exports = {
   listarPeliculas,
   obtenerPelicula,
   crearPelicula,
   actualizarPelicula,
   eliminarPelicula,
-  obtenerEstadisticas,
   listarResenas,
-  crearResena
+  crearResena,
+  modificarPelicula,
+  obtenerPorPaginacion
 }
