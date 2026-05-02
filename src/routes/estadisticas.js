@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const peliculaService = require('../services/PeliculaService'); // ✅
 
-//traer los datos de data/peliculas.js
-const db = require('../data/peliculas')
-
-// Aquí va la lógica de tus estadísticas
-router.get('/estadisticas', (req, res) => {
-   res.json(db.getStats())  
+router.get('/estadisticas', async (req, res, next) => {
+  try {
+    const stats = await peliculaService.obtenerEstadisticas();
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

@@ -1,155 +1,108 @@
 // src/controllers/peliculasController.js
 //traer los datos de data/peliculas.js
-const db = require('../data/peliculas')
+const peliculaService = require('../services/PeliculaService');
 
 // GET /api/peliculas
-const listarPeliculas = (req, res) => {
-  const { genero } = req.query
-  const peliculas = db.getAll(genero)
-  res.json(peliculas)
-}
+const listarPeliculas = async (req, res,next) => {
+  try {
+    const { genero , buscar} = req.query;
+    const peliculas = await peliculaService.obtenerTodas({genero,buscar});
+    res.json(peliculas);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const buscarPorDirector = async (req, res, next) => {
+  try {
+    const { director } = req.query;
+    const peliculas = await peliculaService.buscarPorDirector(director);
+    res.json(peliculas);
+  } catch (err) {
+    next(err);
+  }
+};
 
 // GET /api/peliculas/:id
-const obtenerPelicula = (req, res) => {
-  const id = Number(req.params.id)
-  const pelicula = db.getById(id)
-
-  if (!pelicula) {
-    return res.status(404).json({ error: 'Película no encontrada' })
+const obtenerPelicula = async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const pelicula = await peliculaService.obtenerPorId(id);
+    res.json(pelicula);
+  } catch (err) {
+    next(err);
   }
-
-  res.json(pelicula)
-}
+};
 
 // POST /api/peliculas
-const crearPelicula = (req, res) => {
-  const { titulo, director, anio, genero, nota } = req.body
-
-  if (!titulo || !director || !anio || !genero) {
-    return res.status(400).json({
-      error: 'Los campos titulo, director, anio y genero son obligatorios'
-    })
+const crearPelicula = async (req, res,next) => {
+  try {
+    // const { titulo, director, anio, genero, nota } = req.body;
+    const nueva = await peliculaService.crear(req.body);
+    res.status(201).json(nueva);
+  } catch (err) {
+    next(err);
   }
-
-  if (nota !== undefined && (nota < 0 || nota > 10)) {
-    return res.status(400).json({ error: 'La nota debe estar entre 0 y 10' })
-  }
-
-  const nueva = db.create({
-    titulo,
-    director,
-    anio: Number(anio),
-    genero,
-    nota: nota !== undefined ? Number(nota) : null
-  })
-
-  res.status(201).json(nueva)
-}
+};
 
 // PUT /api/peliculas/:id
-const actualizarPelicula = (req, res) => {
-  const id = Number(req.params.id)
-  const { titulo, director, anio, genero, nota } = req.body
-
-  if (!titulo || !director || !anio || !genero) {
-    return res.status(400).json({
-      error: 'PUT requiere todos los campos: titulo, director, anio, genero'
-    })
+const actualizarPelicula = async (req, res,next) => {
+  try {
+    const id = Number(req.params.id);
+    const actualizada = await peliculaService.actualizas(id,req.body)
+    res.json(actualizada);
+  } catch (err) {
+    next(err);
   }
-
-  const actualizada = db.update(id, { titulo, director, anio: Number(anio), genero, nota: nota ? Number(nota) : null })
-
-  if (!actualizada) {
-    return res.status(404).json({ error: 'Película no encontrada' })
-  }
-
-  res.json(actualizada)
-}
+};
 
 // DELETE /api/peliculas/:id
-const eliminarPelicula = (req, res) => {
-  const id = Number(req.params.id)
-  const eliminada = db.delete(id)
+const eliminarPelicula = async (req, res,next) => {
+  try {
+  const id = Number(req.params.id);
+  const eliminada = await peliculaService.eliminar(id)
+  res.json({ mensaje: "Película eliminada", pelicula: eliminada });
 
-  if (!eliminada) {
-    return res.status(404).json({ error: 'Película no encontrada' })
-  }
-
-  res.json({ mensaje: 'Película eliminada', pelicula: eliminada })
+}catch (err) {
+  next(err)
 }
-
-
+};
 
 // GET /api/peliculas/:id/resenas
-const listarResenas = (req, res) => {
-  const peliculaId = Number(req.params.id)
-  const pelicula = db.getById(peliculaId)
+const listarResenas = async (req, res,next) => {
+  try {
+  const id = Number(req.params.id);
+  const pelicula = await peliculaService.obtenerPorId(id);
+  const resenas = await peliculaService.obtenerResenas(id)
 
-  if (!pelicula) {
-    return res.status(404).json({ error: 'Película no encontrada' })
-  }
-
-  const resenas = db.getResenas(peliculaId)
-  res.json({ pelicula: pelicula.titulo, resenas })
-}
+  res.json({ pelicula: pelicula.titulo, resenas });
+ }catch(err) {
+  next(err)
+ }
+};
 
 // POST /api/peliculas/:id/resenas
-const crearResena = (req, res) => {
-  const peliculaId = Number(req.params.id)
-  const pelicula = db.getById(peliculaId)
+const crearResena = async (req, res,next) => {
+  try{
+  const id = Number(req.params.id);
+  const nuevaResena = await peliculaService.crearResena(id,req.body)
 
-  if (!pelicula) {
-    return res.status(404).json({ error: 'Película no encontrada' })
-  }
-
-  const { autor, texto, puntuacion } = req.body
-
-  if (!autor || !texto || puntuacion === undefined) {
-    return res.status(400).json({
-      error: 'Los campos autor, texto y puntuacion son obligatorios'
-    })
-  }
-
-  if (puntuacion < 1 || puntuacion > 10) {
-    return res.status(400).json({ error: 'La puntuacion debe ser entre 1 y 10' })
-  }
-
-  const nueva = db.createResena(peliculaId, {
-    autor,
-    texto,
-    puntuacion: Number(puntuacion)
-  })
-
-  res.status(201).json(nueva)
+  res.status(201).json(nuevaResena);
+} catch(err){
+  next(err)
 }
+};
 
 // BONUS: PATCH cambiar algunos campos
-const modificarPelicula = (req, res) => {
+const modificarPelicula = async (req, res, next) => {
+  try {
   const id = Number(req.params.id);
-  
-  // 1. Buscamos la película actual para tener los datos existentes
-  const peliculaExistente = db.getById(id); 
-
-  if (!peliculaExistente) {
-    return res.status(404).json({ error: 'Película no encontrada' });
-  }
-
-  // Usamos el Spread Operator para mezclar:
-  // Tomamos lo que ya había (...peliculaExistente) 
-  // y le encima lo que viene nuevo (...req.body)
-  const datosActualizados = { 
-    ...peliculaExistente, 
-    ...req.body 
-  };
-
-  // Aseguramos que los tipos de datos sigan siendo correctos (números)
-  if (req.body.anio) datosActualizados.anio = Number(req.body.anio);
-  if (req.body.nota) datosActualizados.nota = Number(req.body.nota);
-
-  // Guardamos en la "base de datos"
-  const actualizada = db.update(id, datosActualizados);
+  const actualizada = await peliculaService.actualizar(id,req.body);
 
   res.json(actualizada);
+} catch(err) {
+  next(err)
+}
 };
 
 // BONUS: Modificar GET/api/peliculas con paginación ?pagina=1&limite=2
@@ -167,7 +120,7 @@ const obtenerPorPaginacion = (req, res) => {
   // El "inicio" es (pagina - 1) * limite. Ej: Pag 2 con limite 2 empieza en el indice 2.
   const inicio = (pagina - 1) * limite;
   const fin = inicio + limite;
-  
+
   const data = todasLasPeliculas.slice(inicio, fin);
 
   // 4. Calcular total de páginas
@@ -178,19 +131,19 @@ const obtenerPorPaginacion = (req, res) => {
     data,
     total,
     pagina,
-    totalPaginas
+    totalPaginas,
   });
 };
-
 
 module.exports = {
   listarPeliculas,
   obtenerPelicula,
   crearPelicula,
+  buscarPorDirector,
   actualizarPelicula,
   eliminarPelicula,
   listarResenas,
   crearResena,
   modificarPelicula,
-  obtenerPorPaginacion
-}
+  obtenerPorPaginacion,
+};

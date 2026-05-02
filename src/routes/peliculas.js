@@ -3,6 +3,7 @@ const { Router } = require('express')
 const {
   listarPeliculas,
   obtenerPelicula,
+  buscarPorDirector,
   crearPelicula,
   actualizarPelicula,
   eliminarPelicula,
@@ -15,6 +16,7 @@ const {
 const router = Router()
 
 // Rutas de películas
+router.get('/buscar', buscarPorDirector);
 router.get('/', listarPeliculas)
 router.get('/:id', obtenerPelicula)
 router.post('/', crearPelicula)
